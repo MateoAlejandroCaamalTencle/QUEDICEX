@@ -42,5 +42,5 @@ public abstract class Pieza {
         this.columna = columna;
     }
     
-    public abstract boolean movimientoValido(int fOrigen, int cOrigen, int fDestino, int cDestino, Pieza[][] tablero);
+    public abstract boolean esMovimientoPseudoLegal(int fOrigen, int cOrigen, int fDestino, int cDestino, Pieza[][] tablero);
 }
