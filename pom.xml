@@ -24,8 +24,8 @@
     </dependencies>
 
     <build>
-        <sourceDirectory>${project.basedir}</sourceDirectory>
-        <testSourceDirectory>${project.basedir}/CM_Tablero</testSourceDirectory>
+        <sourceDirectory>${project.basedir}/src</sourceDirectory>
+        <testSourceDirectory>${project.basedir}/src/Pruebas Unitarias</testSourceDirectory>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -33,7 +33,7 @@
                 <version>3.13.0</version>
                 <configuration>
                     <excludes>
-                        <exclude>CM_Tablero/CMTableroTest.java</exclude>
+                        <exclude>Pruebas Unitarias/**/*.java</exclude>
                     </excludes>
                 </configuration>
             </plugin>

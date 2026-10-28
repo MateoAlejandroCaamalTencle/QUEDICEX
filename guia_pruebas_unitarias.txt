@@ -143,3 +143,35 @@ Si quieres, te puedo escribir 5 pruebas adicionales para tu juego de ajedrez, li
 - captura diagonal
 - no puede moverse fuera del tablero
 - pieza nula no existe en una casilla vacía
+
+Pruebas de caracterización para CMTablero
+-----------------------------------------
+
+El controlador se encuentra en src/CM_Tablero/CMTablero.java. Combina la
+coordinación de clics y resaltados de la interfaz con la generación de
+movimientos legales, la detección de jaque, el enroque, la captura al paso y la
+promoción. Las pruebas iniciales están en:
+
+src/Pruebas Unitarias/CM_Tablero/CMTableroTest.java
+
+Por ahora comprueban que el peón blanco inicial pueda avanzar una o dos
+casillas, que no se acepte un movimiento que deje al rey expuesto y que la
+simulación de movimientos no cambie el tablero original. Para evitar abrir la
+interfaz gráfica, estas pruebas usan el constructor con null y reflexión para
+ejercitar un método privado. Son pruebas de caracterización; si cambia el
+nombre o la visibilidad de ese método en un refactor, también habrá que adaptar
+las pruebas.
+
+Ejecución en PowerShell desde la raíz del proyecto:
+
+    New-Item -ItemType Directory -Force -Path '.\src\Pruebas Unitarias\CM_Tablero'
+    $env:JAVA_HOME = (Get-Command java).Source | Split-Path | Split-Path
+    $env:MAVEN_HOME = 'C:\tools\apache-maven-3.9.15'
+    $env:Path = "$env:MAVEN_HOME\bin;$env:JAVA_HOME\bin;$env:Path"
+    java -version
+    mvn -version
+    mvn test
+
+Si Maven todavía no está instalado, se puede descargar desde el sitio oficial
+de Apache y descomprimir en C:\tools; luego se asigna MAVEN_HOME a la carpeta
+resultante, como en el ejemplo anterior. Se requiere JDK 17 o superior.
