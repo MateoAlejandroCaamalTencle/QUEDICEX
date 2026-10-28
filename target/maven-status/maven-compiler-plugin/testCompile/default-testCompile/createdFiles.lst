@@ -1,1 +1,6 @@
-CM_Tablero\CMTableroTest.class
+CM_Tablero\ReglasAjedrezRefactorizadasTest.class
+CM_Tablero\EnroqueCaracterizacionTest.class
+CM_Tablero\CMTableroUiMethodsTest.class
+CM_Tablero\EnroqueRefactorizadoTest.class
+CM_Tablero\ReglasAjedrezCaracterizacionTest.class
+CM_Tablero\CMTableroUiMethodsRefactorizedTest.class

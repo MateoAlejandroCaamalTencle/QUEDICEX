@@ -150,17 +150,51 @@ Pruebas de caracterización para CMTablero
 El controlador se encuentra en src/CM_Tablero/CMTablero.java. Combina la
 coordinación de clics y resaltados de la interfaz con la generación de
 movimientos legales, la detección de jaque, el enroque, la captura al paso y la
-promoción. Las pruebas iniciales están en:
+promoción. Las pruebas actuales para esos métodos están en:
 
-src/Pruebas Unitarias/CM_Tablero/CMTableroTest.java
+src/Pruebas Unitarias/CMTableroUiMethodsTest.java
+src/Pruebas Unitarias Refactorizadas/CMTableroUiMethodsRefactorizedTest.java
 
-Por ahora comprueban que el peón blanco inicial pueda avanzar una o dos
-casillas, que no se acepte un movimiento que deje al rey expuesto y que la
-simulación de movimientos no cambie el tablero original. Para evitar abrir la
-interfaz gráfica, estas pruebas usan el constructor con null y reflexión para
-ejercitar un método privado. Son pruebas de caracterización; si cambia el
-nombre o la visibilidad de ese método en un refactor, también habrá que adaptar
-las pruebas.
+Comprueban que `clicEnCasilla` seleccione una pieza, resalte sus destinos
+legales y ejecute un movimiento válido, además de que `actualizarGUI` limpie
+los iconos de las casillas vacías y pinte las ocupadas. Para evitar abrir la
+interfaz gráfica, usan el constructor con `null` e inyectan una matriz de
+botones. Las pruebas refactorizadas verifican también que ambos métodos sean
+privados y los invocan mediante reflexión. Maven incorpora ambas carpetas de
+pruebas al ejecutar `mvn test`.
+
+Pruebas de caracterización y Decompose Conditional para el enroque
+-----------------------------------------------------------------
+
+`src/Pruebas Unitarias/EnroqueCaracterizacionTest.java` registra el
+comportamiento previo de los movimientos de enroque en `Rey` y
+`CMTablero.intentarEnroque`. Comprueba enroques cortos y largos válidos,
+restricciones por movimiento previo y bloqueo, y que el controlador rechace
+un enroque cuando una casilla de paso está bajo ataque.
+
+Después de extraer las condiciones a métodos con nombres descriptivos, las
+pruebas equivalentes están en
+`src/Pruebas Unitarias Refactorizadas/EnroqueRefactorizadoTest.java`. Maven
+ejecuta las pruebas de ambas carpetas con `mvn test`, para facilitar la
+comparación del comportamiento anterior y posterior.
+
+Extract Class: reglas de ajedrez
+--------------------------------
+
+`src/Pruebas Unitarias/ReglasAjedrezCaracterizacionTest.java` registra el
+comportamiento previo de la generación de movimientos legales, la prevención
+de movimientos que dejan al rey en jaque, la detección de jaque y la
+simulación sin modificar el tablero real.
+
+La lógica correspondiente se extrajo de `CMTablero` a
+`src/CM_Tablero/ReglasAjedrez.java`. Esta clase reúne la validación de
+movimientos, la detección de jaque y la creación de copias del tablero;
+`CMTablero` conserva la interacción con la interfaz y delega esas reglas.
+Las pruebas posteriores, que ejercitan directamente la clase extraída, están
+en `src/Pruebas Unitarias Refactorizadas/ReglasAjedrezRefactorizadasTest.java`.
+
+Ejecuta `mvn test` para comparar las pruebas de caracterización y las pruebas
+de la clase extraída junto con el resto de la suite.
 
 Ejecución en PowerShell desde la raíz del proyecto:
 

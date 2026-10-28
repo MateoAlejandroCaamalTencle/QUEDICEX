@@ -26,6 +26,14 @@
     <build>
         <sourceDirectory>${project.basedir}/src</sourceDirectory>
         <testSourceDirectory>${project.basedir}/src/Pruebas Unitarias</testSourceDirectory>
+        <resources>
+            <resource>
+                <directory>${project.basedir}/src</directory>
+                <includes>
+                    <include>IMGS/**</include>
+                </includes>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -34,8 +42,28 @@
                 <configuration>
                     <excludes>
                         <exclude>Pruebas Unitarias/**/*.java</exclude>
+                        <exclude>Pruebas Unitarias Refactorizadas/**/*.java</exclude>
                     </excludes>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.6.1</version>
+                <executions>
+                    <execution>
+                        <id>add-refactored-tests</id>
+                        <phase>generate-test-sources</phase>
+                        <goals>
+                            <goal>add-test-source</goal>
+                        </goals>
+                        <configuration>
+                            <sources>
+                                <source>${project.basedir}/src/Pruebas Unitarias Refactorizadas</source>
+                            </sources>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

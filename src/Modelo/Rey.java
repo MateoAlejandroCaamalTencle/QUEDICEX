@@ -41,32 +41,45 @@ public class Rey extends Pieza {
     }
 
     //movimiento especial, enroque
-    if (seMovio || fDestino != fOrigen) return false;
+    if (!puedeIniciarEnroque(fOrigen, fDestino)) return false;
 
     //enroque corto
     if (cDestino == cOrigen + 2) {
-        Pieza torre = tablero[fOrigen][7];
-
-        if (torre instanceof Torre && !((Torre) torre).isSeMovio()) {
-            if (tablero[fOrigen][5] == null && tablero[fOrigen][6] == null) {
-                return true;
-            }
-        }
+        return puedeEnrocarCorto(fOrigen, tablero);
     }
 
     //enroque largo
     if (cDestino == cOrigen - 2) {
-        Pieza torre = tablero[fOrigen][0];
-
-        if (torre instanceof Torre && !((Torre) torre).isSeMovio()) {
-            if (tablero[fOrigen][1] == null &&
-                tablero[fOrigen][2] == null &&
-                tablero[fOrigen][3] == null) {
-                return true;
-            }
-        }
+        return puedeEnrocarLargo(fOrigen, tablero);
     }
 
     return false;
 }
+
+    private boolean puedeIniciarEnroque(int filaOrigen, int filaDestino) {
+        return !seMovio && filaOrigen == filaDestino;
+    }
+
+    private boolean puedeEnrocarCorto(int fila, Pieza[][] tablero) {
+        return torrePuedeEnrocar(tablero[fila][7])
+                && casillasVacias(tablero, fila, 5, 6);
+    }
+
+    private boolean puedeEnrocarLargo(int fila, Pieza[][] tablero) {
+        return torrePuedeEnrocar(tablero[fila][0])
+                && casillasVacias(tablero, fila, 1, 2, 3);
+    }
+
+    private boolean torrePuedeEnrocar(Pieza pieza) {
+        return pieza instanceof Torre torre && !torre.isSeMovio();
+    }
+
+    private boolean casillasVacias(Pieza[][] tablero, int fila, int... columnas) {
+        for (int columna : columnas) {
+            if (tablero[fila][columna] != null) {
+                return false;
+            }
+        }
+        return true;
+    }
 }
