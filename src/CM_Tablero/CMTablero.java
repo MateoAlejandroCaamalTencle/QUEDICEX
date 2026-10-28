@@ -19,6 +19,7 @@ public class CMTablero {
     //atributos
     private final Tablero frm;
     private final LogicaTablero logica;
+    private final ReglasAjedrez reglas;
 
     private boolean seleccionando = false; //indica si el jugador ya hizo click en una casilla de origen
     private int fOrigen, cOrigen; 
@@ -37,6 +38,7 @@ public class CMTablero {
     public CMTablero(Tablero frm) {
         this.frm = frm;
         this.logica = new LogicaTablero();
+        this.reglas = new ReglasAjedrez(logica);
         initMovedMap();
         if (frm != null) {
             crearMatrizBotones();
@@ -81,7 +83,7 @@ public class CMTablero {
     }
     
     //método del click
-    public void clicEnCasilla(int fila, int columna) {
+    private void clicEnCasilla(int fila, int columna) {
         if (!seleccionando) {
             seleccionarOrigen(fila, columna);
         } else {
@@ -244,70 +246,78 @@ public class CMTablero {
 
     //intentar enroque (comprueba usando una copia del tablero)
     private boolean intentarEnroque(String color, int fr, int cr, int fd, int cd) {
-    boolean corto = cd > cr;
-    int fila = fr;
-    int torreCol = corto ? 7 : 0;
+        boolean corto = cd > cr;
+        int fila = fr;
+        int torreCol = corto ? 7 : 0;
 
-    Pieza torreOriginal = logica.getCasillas()[fila][torreCol];
-    Pieza reyOriginal = logica.getCasillas()[fr][cr];
-    if (!(torreOriginal instanceof Torre) || !(reyOriginal instanceof Rey)) return false;
+        Pieza torreOriginal = logica.getCasillas()[fila][torreCol];
+        Pieza reyOriginal = logica.getCasillas()[fr][cr];
+        if (!piezasPreparadasParaEnroque(torreOriginal, reyOriginal)) return false;
 
-    String keyRey = "rey_" + color;
-    String keyTorre = "torre_" + color + "_" + fila + "_" + torreCol;
-    if (Boolean.TRUE.equals(movedMap.get(keyRey)) || Boolean.TRUE.equals(movedMap.get(keyTorre))) {
-        return false;
+        String keyRey = "rey_" + color;
+        String keyTorre = "torre_" + color + "_" + fila + "_" + torreCol;
+        if (algunaPiezaDelEnroqueYaSeMovio(keyRey, keyTorre)) return false;
+
+        int paso = corto ? 1 : -1;
+        if (!caminoDelEnroqueLibre(fila, cr, torreCol, paso)) return false;
+
+        LogicaTablero copia = copiarModelo(logica);
+        Pieza reyCopia = copia.getCasillas()[fr][cr];
+        if (!trayectoriaDelReySegura(copia, reyCopia, color, fila, cr, paso)) return false;
+
+        //si pasa las pruebas, realizamos el enroque en el tablero real
+        logica.getCasillas()[fr][cr] = null;
+        logica.getCasillas()[fd][cd] = reyOriginal;
+        reyOriginal.setPosicion(fd, cd);
+
+        int nuevaColTorre = corto ? cd - 1 : cd + 1;
+        logica.getCasillas()[fila][torreCol] = null;
+        logica.getCasillas()[fila][nuevaColTorre] = torreOriginal;
+        torreOriginal.setPosicion(fila, nuevaColTorre);
+
+        movedMap.put(keyRey, true);
+        movedMap.put(keyTorre, true);
+        ultimaDoblePeon = null;
+        return true;
     }
 
-    //verificar casillas intermedias vacías (en el tablero real)
-    int paso = corto ? 1 : -1;
-    int c = cr + paso;
-    while (c != torreCol) {
-        if (logica.getCasillas()[fila][c] != null) return false;
-        c += paso;
+    private boolean piezasPreparadasParaEnroque(Pieza torre, Pieza rey) {
+        return torre instanceof Torre && rey instanceof Rey;
     }
 
-    // Ahora comprobamos jaque usando una copia. Usamos las piezas que estén en la copia,
-    // no las originales, para no modificar el estado real.
-    LogicaTablero copia = copiarModelo(logica);
-    Pieza reyCopia = copia.getCasillas()[fr][cr]; // PIEZA de la copia
-    if (reyCopia == null || !(reyCopia instanceof Rey)) return false;
-
-    //comprobar que la casilla actual no esté en jaque (ya debería estar garantizado, pero comprobamos pasos)
-    int col1 = cr;
-    int col2 = cr + paso;
-    int col3 = cr + 2 * paso;
-
-    //mover paso intermedio en la copia y comprobar jaque
-    copia.getCasillas()[fila][col1] = null;
-    copia.getCasillas()[fila][col2] = reyCopia;
-    reyCopia.setPosicion(fila, col2);
-    if (estaEnJaque(copia, color)) {
-        return false;
+    private boolean algunaPiezaDelEnroqueYaSeMovio(String keyRey, String keyTorre) {
+        return Boolean.TRUE.equals(movedMap.get(keyRey))
+                || Boolean.TRUE.equals(movedMap.get(keyTorre));
     }
 
-    //mover a la posicion final en la copia y comprobar jaque
-    copia.getCasillas()[fila][col2] = null;
-    copia.getCasillas()[fila][col3] = reyCopia;
-    reyCopia.setPosicion(fila, col3);
-    if (estaEnJaque(copia, color)) {
-        return false;
+    private boolean caminoDelEnroqueLibre(int fila, int columnaRey, int columnaTorre, int paso) {
+        for (int columna = columnaRey + paso; columna != columnaTorre; columna += paso) {
+            if (logica.getCasillas()[fila][columna] != null) {
+                return false;
+            }
+        }
+        return true;
     }
 
-    //si pasa las pruebas, realizamos el enroque en el tablero real
-    logica.getCasillas()[fr][cr] = null;
-    logica.getCasillas()[fd][cd] = reyOriginal;
-    reyOriginal.setPosicion(fd, cd);
+    private boolean trayectoriaDelReySegura(
+            LogicaTablero copia, Pieza rey, String color, int fila, int columnaOrigen, int paso) {
+        if (!(rey instanceof Rey)) return false;
 
-    int nuevaColTorre = corto ? cd - 1 : cd + 1;
-    logica.getCasillas()[fila][torreCol] = null;
-    logica.getCasillas()[fila][nuevaColTorre] = torreOriginal;
-    torreOriginal.setPosicion(fila, nuevaColTorre);
+        int columnaIntermedia = columnaOrigen + paso;
+        int columnaDestino = columnaOrigen + 2 * paso;
+        return moverReyEnCopiaSiNoHayJaque(
+                    copia, rey, color, fila, columnaOrigen, columnaIntermedia)
+                && moverReyEnCopiaSiNoHayJaque(
+                    copia, rey, color, fila, columnaIntermedia, columnaDestino);
+    }
 
-    movedMap.put(keyRey, true);
-    movedMap.put(keyTorre, true);
-    ultimaDoblePeon = null;
-    return true;
-}
+    private boolean moverReyEnCopiaSiNoHayJaque(
+            LogicaTablero copia, Pieza rey, String color, int fila, int columnaOrigen, int columnaDestino) {
+        copia.getCasillas()[fila][columnaOrigen] = null;
+        copia.getCasillas()[fila][columnaDestino] = rey;
+        rey.setPosicion(fila, columnaDestino);
+        return !estaEnJaque(copia, color);
+    }
 
     //marcar con borde verde movimientos legales para la pieza seleccionada
     private void marcarMovimientosLegales(List<Movimiento> lista) {
@@ -328,102 +338,28 @@ public class CMTablero {
 
     //generar movimientos legales
     private List<Movimiento> generarMovimientosLegalesParaPieza(int f, int c) {
-        List<Movimiento> res = new ArrayList<>();
-        Pieza p = logica.getCasillas()[f][c];
-        if (p == null) return res;
-        //generar movimientos pseudo-legales según movimientoValido de la pieza
-        for (int rf = 0; rf < 8; rf++) for (int rc = 0; rc < 8; rc++) {
-            if (p.movimientoValido(f, c, rf, rc, logica.getCasillas())
-                    && esMovimientoLegalEnCopia(p, f, c, rf, rc)) {
-                res.add(new Movimiento(f, c, rf, rc));
-            }
-        }
-        return res;
-    }
-
-    // Simula el movimiento en una copia para no alterar el tablero real.
-    private boolean esMovimientoLegalEnCopia(Pieza pieza, int fOrigen, int cOrigen,
-            int fDestino, int cDestino) {
-        LogicaTablero copia = copiarModelo(logica);
-
-        // Replica la captura al paso en la copia antes de mover el peon.
-        if (pieza instanceof Peon && Math.abs(cDestino - cOrigen) == 1
-                && copia.getCasillas()[fDestino][cDestino] == null
-                && ultimaDoblePeon != null) {
-            int filaPeonDoble = ultimaDoblePeon[0];
-            int colPeonDoble = ultimaDoblePeon[1];
-            int filaCaptura = pieza.getColor().equals("blanco")
-                    ? fDestino + 1 : fDestino - 1;
-            if (filaPeonDoble == filaCaptura && colPeonDoble == cDestino) {
-                copia.getCasillas()[filaPeonDoble][colPeonDoble] = null;
-            }
-        }
-
-        if (!copia.mover(fOrigen, cOrigen, fDestino, cDestino)) return false;
-        return !estaEnJaque(copia, pieza.getColor());
+        return reglas.generarMovimientosLegalesParaPieza(f, c, ultimaDoblePeon).stream()
+                .map(movimiento -> new Movimiento(
+                        movimiento.fOrigen, movimiento.cOrigen,
+                        movimiento.fDestino, movimiento.cDestino))
+                .toList();
     }
 
     //generar todos los movimientos legales para un color (usado para jaque mate detection)
     private List<Movimiento> generarMovimientosLegalesParaColor(String color) {
-        List<Movimiento> lista = new ArrayList<>();
-        for (int f = 0; f < 8; f++) for (int c = 0; c < 8; c++) {
-            Pieza p = logica.getCasillas()[f][c];
-            if (p == null || !p.getColor().equals(color)) continue;
-            lista.addAll(generarMovimientosLegalesParaPieza(f, c));
-        }
-        return lista;
+        return reglas.generarMovimientosLegalesParaColor(color, ultimaDoblePeon).stream()
+                .map(movimiento -> new Movimiento(
+                        movimiento.fOrigen, movimiento.cOrigen,
+                        movimiento.fDestino, movimiento.cDestino))
+                .toList();
     }
     
-    //detectar jaque simple
     private boolean estaEnJaque(LogicaTablero tab, String color) {
-        int[] posRey = encontrarRey(tab, color);
-        if (posRey == null) return true; // sin rey = tratado como jaque
-        int rf = posRey[0], rc = posRey[1];
-        String enemigo = color.equals("blanco") ? "negro" : "blanco";
-        for (int f = 0; f < 8; f++) for (int c = 0; c < 8; c++) {
-            Pieza p = tab.getCasillas()[f][c];
-            if (p == null || !p.getColor().equals(enemigo)) continue;
-            //si la pieza enemiga tiene movimientoValido hacia la casilla del rey
-            if (p.movimientoValido(f, c, rf, rc, tab.getCasillas()))
-                return true;
-        }
-        return false;
+        return reglas.estaEnJaque(tab, color);
     }
 
-    private int[] encontrarRey(LogicaTablero tab, String color) {
-        Pieza[][] cas = tab.getCasillas();
-        for (int f = 0; f < 8; f++) for (int c = 0; c < 8; c++) {
-            Pieza p = cas[f][c];
-            if (p instanceof Rey && p.getColor().equals(color)) return new int[]{f, c};
-        }
-        return null;
-    }
-    
-    //crear nuevas instancias
     private LogicaTablero copiarModelo(LogicaTablero original) {
-        LogicaTablero copia = new LogicaTablero();
-        //limpiar copia primero
-        Pieza[][] dest = copia.getCasillas();
-        Pieza[][] src = original.getCasillas();
-        for (int r = 0; r < 8; r++) for (int c = 0; c < 8; c++) dest[r][c] = null;
-
-        for (int r = 0; r < 8; r++) for (int c = 0; c < 8; c++) {
-            Pieza p = src[r][c];
-            if (p == null) continue;
-            String tipo = p.getClass().getSimpleName();
-            String color = p.getColor();
-            Pieza nueva = null;
-            switch (tipo) {
-                case "Peon": nueva = new Peon(color, r, c); break;
-                case "Torre": nueva = new Torre(color, r, c); break;
-                case "Caballo": nueva = new Caballo(color, r, c); break;
-                case "Alfil": nueva = new Alfil(color, r, c); break;
-                case "Reina": nueva = new Reina(color, r, c); break;
-                case "Rey": nueva = new Rey(color, r, c); break;
-            }
-            dest[r][c] = nueva;
-        }
-        return copia;
+        return reglas.copiarModelo(original);
     }
     
     //coronación
@@ -509,7 +445,7 @@ public class CMTablero {
         }
     }
 
-    public void actualizarGUI() {
+    private void actualizarGUI() {
         Pieza[][] cas = logica.getCasillas();
         //limpia todos los iconos primero
         for (int f = 0; f < 8; f++) {
