@@ -1,0 +1,177 @@
+Como crear archivos Java para pruebas unitarias exitosas
+
+Para una prueba unitaria en Java con JUnit 5, la estructura mínima es esta:
+
+package CM_Tablero;
+
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+public class CMTableroTest {
+
+    @Test
+    void nombreDeLaPrueba() {
+        // Arrange
+        // Act
+        // Assert
+    }
+}
+
+Explicación:
+- package CM_Tablero; indica en qué paquete está la clase.
+- import org.junit.jupiter.api.Test; importa la anotación @Test.
+- import static org.junit.jupiter.api.Assertions.*; importa los métodos de comprobación.
+- La clase debe terminar en Test para que Maven y JUnit la detecten.
+- El método debe estar anotado con @Test.
+
+Este archivo en específico:
+
+package CM_Tablero;
+
+import Modelo.LogicaTablero;
+import Modelo.Pieza;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+public class CMTableroTest {
+
+    @Test
+    void unPeonBlancoPuedeMoverseUnaCasilla() {
+        LogicaTablero logica = new LogicaTablero();
+
+        Pieza pieza = logica.getCasillas()[6][0];
+        assertNotNull(pieza, "Debe haber un peón blanco en la posición inicial");
+
+        boolean movimiento = logica.mover(6, 0, 5, 0);
+
+        assertTrue(movimiento, "El peón blanco debería poder avanzar una casilla");
+        assertNull(logica.getCasillas()[6][0], "La casilla origen queda vacía");
+        assertNotNull(logica.getCasillas()[5][0], "La casilla destino contiene la pieza movida");
+    }
+}
+
+Qué hace exactamente:
+1. Crea una instancia del tablero lógico.
+2. Verifica que haya un peón blanco en la posición inicial.
+3. Ejecuta el movimiento mover(6, 0, 5, 0).
+4. Comprueba que el movimiento fue válido.
+5. Comprueba que la casilla origen quedó vacía.
+6. Comprueba que la casilla destino quedó ocupada.
+
+En resumen, esta prueba valida una regla básica del ajedrez: el peón blanco inicial puede avanzar una casilla.
+
+Cómo se estructuran bien las pruebas unitarias:
+
+Arrange
+Preparar el estado inicial.
+
+LogicaTablero logica = new LogicaTablero();
+
+Act
+Ejecutar la acción a probar.
+
+boolean movimiento = logica.mover(6, 0, 5, 0);
+
+Assert
+Comprobar el resultado esperado.
+
+assertTrue(movimiento);
+
+Recomendaciones para hacer pruebas unitarias bien:
+
+1. Prueba una sola cosa por prueba.
+2. Usa nombres claros.
+3. No pruebes la implementación interna; prueba el comportamiento visible.
+4. Haz pruebas pequeñas y repetibles.
+5. Usa asserts específicos: assertTrue, assertFalse, assertEquals, assertNotNull, assertNull, assertThrows.
+
+Ejemplo de otra prueba útil:
+
+package CM_Tablero;
+
+import Modelo.LogicaTablero;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+public class CMTableroTest {
+
+    @Test
+    void unPeonNoPuedeMoverseDosCasillasSiLaPrimeraEstaOcupada() {
+        LogicaTablero logica = new LogicaTablero();
+
+        logica.getCasillas()[5][0] = new Modelo.Torre("negro", 5, 0);
+
+        boolean movimiento = logica.mover(6, 0, 4, 0);
+
+        assertFalse(movimiento, "No debería poder saltar una pieza");
+    }
+}
+
+Plantilla que sirve para casi cualquier prueba:
+
+package tu.paquete;
+
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
+public class MiClaseTest {
+
+    @Test
+    void nombreDeLaPrueba() {
+        // Arrange
+        // preparar datos
+
+        // Act
+        // ejecutar acción
+
+        // Assert
+        // verificar resultado
+    }
+}
+
+En una frase:
+Las pruebas unitarias no son “código de la app dentro de un archivo”, sino “casos de prueba pequeños y aislados que validan el comportamiento esperado”.
+
+Si quieres, te puedo escribir 5 pruebas adicionales para tu juego de ajedrez, listas para copiar y pegar, con cosas como:
+- peón negro avanza
+- peón blanco no puede avanzar si hay una pieza bloqueando
+- captura diagonal
+- no puede moverse fuera del tablero
+- pieza nula no existe en una casilla vacía
+
+Pruebas de caracterización para CMTablero
+-----------------------------------------
+
+El controlador se encuentra en src/CM_Tablero/CMTablero.java. Combina la
+coordinación de clics y resaltados de la interfaz con la generación de
+movimientos legales, la detección de jaque, el enroque, la captura al paso y la
+promoción. Las pruebas iniciales están en:
+
+src/Pruebas Unitarias/CM_Tablero/CMTableroTest.java
+
+Por ahora comprueban que el peón blanco inicial pueda avanzar una o dos
+casillas, que no se acepte un movimiento que deje al rey expuesto y que la
+simulación de movimientos no cambie el tablero original. Para evitar abrir la
+interfaz gráfica, estas pruebas usan el constructor con null y reflexión para
+ejercitar un método privado. Son pruebas de caracterización; si cambia el
+nombre o la visibilidad de ese método en un refactor, también habrá que adaptar
+las pruebas.
+
+Ejecución en PowerShell desde la raíz del proyecto:
+
+    New-Item -ItemType Directory -Force -Path '.\src\Pruebas Unitarias\CM_Tablero'
+    $env:JAVA_HOME = (Get-Command java).Source | Split-Path | Split-Path
+    $env:MAVEN_HOME = 'C:\tools\apache-maven-3.9.15'
+    $env:Path = "$env:MAVEN_HOME\bin;$env:JAVA_HOME\bin;$env:Path"
+    java -version
+    mvn -version
+    mvn test
+
+Si Maven todavía no está instalado, se puede descargar desde el sitio oficial
+de Apache y descomprimir en C:\tools; luego se asigna MAVEN_HOME a la carpeta
+resultante, como en el ejemplo anterior. Se requiere JDK 17 o superior.
